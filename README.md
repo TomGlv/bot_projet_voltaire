@@ -1,4 +1,4 @@
-# PROJET VOLTAIRE HELPER
+# Projet Voltaire Helper #
 ![Alt Text](ressources/exemple.png)
 ## Description
 Le **Projet Voltaire Helper** est un outil qui surveille le presse-papiers de Windows pour détecter tout nouveau texte. Lorsqu'un texte est copié, il est automatiquement envoyé à l'API de correction grammaticale de Reverso. Le programme renvoie ensuite la version corrigée du texte avec les corrections mises en surbrillance dans le terminal.

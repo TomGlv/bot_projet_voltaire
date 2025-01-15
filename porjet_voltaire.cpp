@@ -64,7 +64,6 @@ void ENterInterface() {
     std::cout << " ░          ░ ░                               ░      ░ ░      ░  ░               ░  ░ ░     ░        ░  ░" << std::endl;
     std::cout << "      ░                                       ░                                                            " << std::endl;
     SetConsoleColor(15, 0);  // Revenir à la couleur blanche sur fond noir
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 }
 
 // Fonction pour afficher une animation "hacker" de type Matrix
@@ -211,7 +210,8 @@ int main() {
 
         // Vérifie si le contenu du presse-papiers a changé
         if (!currentText.empty() && currentText != lastClipboardText) {
-            hackerInterface();
+            system("cls");
+            ENterInterface();
             std::cout << "\nTexte envoyé : " << currentText << std::endl;
 
             // Envoyer le texte à Reverso

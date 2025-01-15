@@ -5,7 +5,95 @@
 #include <chrono>
 #include <thread>
 #include <nlohmann/json.hpp>
+#include "resource.h"  // Pour inclure l'identifiant de ton icône
+// Définir quelques couleurs pour l'affichage "hacker"
+#define GREEN_TEXT 10
+#define RED_TEXT 12
+#define WHITE_TEXT 15
+#define CYAN_TEXT 11
+#define YELLOW_TEXT 14
+#define BLACK_BACKGROUND 0
 
+// Fonction pour obtenir la largeur de la console
+int GetConsoleWidth() {
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.srWindow.Right - csbi.srWindow.Left + 1;  // Retourne la largeur
+}
+
+// Fonction pour afficher du texte centré
+void PrintCenteredText(const std::string& text) {
+    int consoleWidth = GetConsoleWidth();
+    int textLength = text.length();
+    int padding = (consoleWidth - textLength) / 2;  // Calcul du padding nécessaire pour centrer le texte
+
+    // Afficher des espaces avant le texte pour le centrer
+    for (int i = 0; i < padding; ++i) {
+        std::cout << " ";
+    }
+
+    // Afficher le texte centré
+    std::cout << text << std::endl;
+}
+// Fonction pour changer la couleur du texte dans la console
+void SetConsoleColor(int textColor, int backgroundColor) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (textColor | backgroundColor << 4));
+}
+// Fonction pour afficher une animation "hacker" de type Matrix sans centrer le texte
+void ENterInterface() {
+    system("cls");  // Effacer la console
+    SetConsoleColor(4, 0);  // Rouge sur fond noir
+
+    std::cout << "▄▄▄█████▓ ▒█████   ███▄ ▄███▓  ▄████  ██▓     ██▒   █▓" << std::endl;
+    std::cout << "▓  ██▒ ▓▒▒██▒  ██▒▓██▒▀█▀ ██▒  ██▒ ▀█▒▓██▒    ▓██░   █▒" << std::endl;
+    std::cout << "▒ ▓██░ ▒░▒██░  ██▒▓██    ▓██░ ▒██░▄▄▄░▒██░     ▓██  █▒░" << std::endl;
+    std::cout << "░ ▓██▓ ░ ▒██   ██░▒██    ▒██  ░▓█  ██▓▒██░      ▒██ █░░" << std::endl;
+    std::cout << "  ▒██▒ ░ ░ ████▓▒░▒██▒   ░██▒ ░▒▓███▀▒░██████▒   ▒▀█░" << std::endl;
+    std::cout << "  ▒ ░░   ░ ▒░▒░▒░ ░ ▒░   ░  ░  ░▒   ▒ ░ ▒░▓  ░   ░ ▐░" << std::endl;
+    std::cout << "    ░      ░ ▒ ▒░ ░  ░      ░   ░   ░ ░ ░ ▒  ░   ░ ░░" << std::endl;
+    std::cout << "  ░      ░ ░ ░ ▒  ░      ░   ░  ░   ░   ░ ░        ░░" << std::endl;
+    std::cout << "             ░ ░         ░         ░     ░  ░      ░" << std::endl;
+    std::cout << " ▄▄▄▄    ▒█████  ▄▄▄█████▓               ██▒   █▓ ▒█████   ██▓    ▄▄▄█████▓ ▄▄▄       ██▓ ██▀███  ▓█████" << std::endl;
+    std::cout << "▓█████▄ ▒██▒  ██▒▓  ██▒ ▓▒              ▓██░   █▒▒██▒  ██▒▓██▒    ▓  ██▒ ▓▒▒████▄    ▓██▒▓██ ▒ ██▒▓█   ▀" << std::endl;
+    std::cout << "▒██▒ ▄██▒██░  ██▒▒ ▓██░ ▒░               ▓██  █▒░▒██░  ██▒▒██░    ▒ ▓██░ ▒░▒██  ▀█▄  ▒██▒▓██ ░▄█ ▒▒███   " << std::endl;
+    std::cout << "▒██░█▀  ▒██   ██░░ ▓██▓ ░                 ▒██ █░░▒██   ██░▒██░    ░ ▓██▓ ░ ░██▄▄▄▄██ ░██░▒██▀▀█▄  ▒▓█  ▄ " << std::endl;
+    std::cout << "░▓█  ▀█▓░ ████▓▒░  ▒██▒ ░     ███████      ▒▀█░  ░ ████▓▒░░██████▒  ▒██▒ ░  ▓█   ▓██▒░██░░██▓ ▒██▒░▒████▒" << std::endl;
+    std::cout << "░▒▓███▀▒░ ▒░▒░▒░   ▒ ░░                    ░ ▐░  ░ ▒░▒░▒░ ░ ▒░▓  ░  ▒ ░░    ▒▒   ▓▒█░░▓  ░ ▒▓ ░▒▓░░░ ▒░ ░" << std::endl;
+    std::cout << "▒░▒   ░   ░ ▒ ▒░     ░                     ░ ░░    ░ ▒ ▒░ ░ ░ ▒  ░    ░      ▒   ▒▒ ░ ▒ ░  ░▒ ░ ▒░ ░ ░  ░" << std::endl;
+    std::cout << " ░    ░ ░ ░ ░ ▒    ░                         ░░  ░ ░ ░ ▒    ░ ░     ░        ░   ░▒    ▒ ░  ░░   ░    ░  " << std::endl;
+    std::cout << " ░          ░ ░                               ░      ░ ░      ░  ░               ░  ░ ░     ░        ░  ░" << std::endl;
+    std::cout << "      ░                                       ░                                                            " << std::endl;
+    SetConsoleColor(15, 0);  // Revenir à la couleur blanche sur fond noir
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+}
+
+// Fonction pour afficher une animation "hacker" de type Matrix
+void hackerInterface() {
+    system("cls");  // Effacer la console
+    SetConsoleColor(10, 0);  // Vert sur fond noir
+    PrintCenteredText("------------------------------------------------------");
+    PrintCenteredText("  Fait par Tomglv - BOT PROJET VOLTAIRE");
+    PrintCenteredText("------------------------------------------------------");
+    SetConsoleColor(15, 0);  // Blanc sur fond noir
+}
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    // Crée la fenêtre avec l'icône
+    HWND hwnd = CreateWindowEx(0, L"NomClasseFenetre", L"TitreFenetre", WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+        nullptr, nullptr, hInstance, nullptr);
+
+    // Charger l'icône à partir de l'ID défini
+    HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);  // Définit l'icône de la fenêtre
+
+    // Boucle de messages
+    MSG msg;
+    while (GetMessage(&msg, nullptr, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return (int)msg.wParam;
+}
 using json = nlohmann::json;
 
 class ClipboardSpellChecker {
@@ -109,8 +197,11 @@ public:
 
 int main() {
     SetConsoleOutputCP(CP_UTF8); // Permet d'afficher correctement les caractères accentués dans la console
+    // Afficher l'interface "hacker"
+    ENterInterface();
+    
 
-    std::cout << "Le programme surveille le presse-papiers..." << std::endl;
+    std::cout << "Projet Voltaire Bot :" << std::endl;
 
     std::string lastClipboardText = "";
 
@@ -120,16 +211,17 @@ int main() {
 
         // Vérifie si le contenu du presse-papiers a changé
         if (!currentText.empty() && currentText != lastClipboardText) {
-            std::cout << "Nouveau texte détecté dans le presse-papiers : " << currentText << std::endl;
+            hackerInterface();
+            std::cout << "\nTexte envoyé : " << currentText << std::endl;
 
             // Envoyer le texte à Reverso
             std::string response = ClipboardSpellChecker::checkSpelling(currentText);
             if (!response.empty()) {
                 std::string correctedText = ClipboardSpellChecker::parseReversoResponse(response);
-                std::cout << "Texte corrigé par Reverso : " << correctedText << std::endl;
+                std::cout << "\nTexte corrigé : " << correctedText << std::endl;
             }
             else {
-                std::cerr << "Erreur : Impossible de récupérer une réponse de Reverso." << std::endl;
+                std::cerr << "Erreur : Impossible de récupérer une réponse." << std::endl;
             }
 
             // Met à jour le dernier texte détecté

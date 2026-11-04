@@ -1,6 +1,6 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#define IDR_MAINFRAME 101  // ID pour l'icône
+#define IDR_MAINFRAME 101  // ID pour l'icÃ´ne
 
 #endif

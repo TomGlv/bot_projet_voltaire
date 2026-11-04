@@ -1,66 +1,74 @@
-# Projet Voltaire Helper #
-![Alt Text](ressources/exemple.png)
-## Description
-Le **Projet Voltaire Helper** est un outil qui surveille le presse-papiers de Windows pour détecter tout nouveau texte. Lorsqu'un texte est copié, il est automatiquement envoyé à l'API de correction grammaticale de Reverso. Le programme renvoie ensuite la version corrigée du texte avec les corrections mises en surbrillance dans le terminal.
+# Bot Projet Voltaire – OCR Tesseract + IA (Groq / Gemini)
 
-Ce projet peut être combiné avec des outils comme **PowerToys** pour extraire du texte à partir de captures d'écran, transformant ainsi cet outil en un véritable assistant pour des projets tels que le **Projet Voltaire**, qui aide à améliorer l'orthographe et la grammaire.
+![Exemple](ressources/exemple.png)
 
----
+Outil Windows en **C++** qui lit une phrase à l'écran avec l'**OCR Tesseract** puis la fait analyser par **deux LLM en parallèle** (GPT-OSS 120B via **Groq** et **Google Gemini**) pour repérer les fautes d'orthographe, de grammaire et de conjugaison, avec la règle associée.
 
-## Prérequis
+## Fonctionnement
 
-1. **Windows 10/11** avec le terminal correctement configuré pour afficher l'UTF-8.
-2. **PowerToys** (téléchargeable ici : [PowerToys GitHub](https://github.com/microsoft/PowerToys)) ou sur le microsoft store :
-   - Utilisez la fonctionnalité **Text Extractor** pour capturer du texte directement à partir de l'écran.
-3. **Visual Studio** ou tout autre IDE compatible avec C++.
-4. **vcpkg** pour gérer les dépendances de bibliothèques comme `nlohmann/json` et `libcurl`.
+```
+Capture d'une zone de l'écran (Win32 GDI)        Texte copié (Ctrl+C)
+                 │                                         │
+                 ▼                                         │
+Prétraitement Leptonica                                    │
+(niveaux de gris, agrandissement x2, contraste)            │
+                 │                                         │
+                 ▼                                         │
+OCR Tesseract 5 (LSTM, modèle français fra.traineddata)    │
+                 │                                         │
+                 └──────────────► texte ◄──────────────────┘
+                                   │
+                 ┌─────────────────┴─────────────────┐
+                 ▼                                   ▼
+        Groq · GPT-OSS 120B                  Google Gemini
+                 │   (requêtes HTTP parallèles,      │
+                 │    libcurl + nlohmann/json)       │
+                 └─────────────────┬─────────────────┘
+                                   ▼
+          « FAUTE : <mot> → <correction> | RÈGLE : … »
+```
 
----
-
-## Installation
-
-1. Clonez ce dépôt ou copiez les fichiers dans un nouveau projet Visual Studio.
-2. Assurez-vous que les bibliothèques suivantes sont installées :
-   - [nlohmann/json](https://github.com/nlohmann/json)
-   - [libcurl](https://curl.se/libcurl/)
-3. Configurez votre projet pour inclure et lier correctement ces bibliothèques.
-
----
+- Le prompt système demande une réponse courte et structurée, et d'ignorer les petites erreurs de reconnaissance de l'OCR.
+- Les deux modèles sont interrogés en même temps (`std::async`) : leurs réponses se comparent d'un coup d'œil.
+- Le texte est encodé correctement en UTF-8 (`CF_UNICODETEXT`, JSON généré par nlohmann/json), ce qui garde les accents.
+- Les clés API ne sont jamais écrites dans le code (variables d'environnement ou `config.env`).
 
 ## Utilisation
 
-1. Démarrez le programme. Il surveillera automatiquement le presse-papiers.
-2. Ouvrez PowerToys et activez l'outil **Text Extractor** :
-   - Faites une capture de l'écran contenant du texte à corriger.
-   - Le texte extrait sera copié automatiquement dans le presse-papiers.
-3. Le programme Clipboard Spell Checker détectera le texte copié, l'enverra à Reverso et affichera le texte corrigé dans le terminal, avec les corrections en **rouge**.
+```text
+projet_voltaire.exe                   mode interactif
+projet_voltaire.exe --image capture.png   OCR d'une image puis analyse IA
+projet_voltaire.exe --ocr capture.png     OCR seul
+projet_voltaire.exe --text "Les enfants que j'ai vu jouer..."   analyse IA d'un texte
+```
 
----
+En mode interactif (touches globales) :
 
-## Exemple d'utilisation avec le Projet Voltaire
+| Touche | Action |
+|---|---|
+| **F7** | coin haut-gauche de la zone à lire (position de la souris) |
+| **F8** | coin bas-droite de la zone |
+| **F9** | capture de la zone → OCR → analyse IA |
+| **Ctrl+C** sur un texte | analyse directe du texte copié |
+| **Échap** | quitter (console au premier plan) |
 
-En combinant **PowerToys** pour extraire des textes de n'importe quel écran et cet outil, vous pouvez :
-- Repérer rapidement des fautes dans des documents ou des images.
-- Recevoir des corrections en temps réel.
-- Améliorer vos compétences en orthographe et grammaire pour des examens ou certifications comme le Projet Voltaire.
+## Installation
 
----
+1. **Dépendances** avec [vcpkg](https://github.com/microsoft/vcpkg) (intégration MSBuild : `vcpkg integrate install`) :
+   ```bash
+   vcpkg install tesseract:x64-windows-static curl:x64-windows-static nlohmann-json:x64-windows-static
+   ```
+2. Ouvre `porjet_voltaire.sln` dans **Visual Studio** et compile en **Release | x64** (toolset v145, C++17, runtime statique `/MT`) : on obtient un seul `.exe` autonome.
+3. Télécharge le modèle français [`fra.traineddata`](https://github.com/tesseract-ocr/tessdata_best/raw/main/fra.traineddata) et place-le à côté de l'exécutable (ou dans un dossier `tessdata/`).
+4. Copie `config.env.example` en `config.env` à côté de l'exécutable et renseigne `GROQ_API_KEY` et/ou `GEMINI_API_KEY`.
 
-## Avertissements
+Les modèles sont configurables (`GROQ_MODEL`, `GEMINI_MODEL`, `OCR_LANG`) sans recompiler.
 
-1. Ce projet utilise l'API publique de Reverso. Assurez-vous de ne pas dépasser les limites d'utilisation si vous l'utilisez intensivement.
-2. L'affichage en couleurs (rouge pour les corrections) peut ne pas fonctionner sur certains terminaux qui ne supportent pas les séquences ANSI.
+## Historique
 
----
+- **v1** : surveillance du presse-papiers et correction via l'API Reverso.
+- **v2** : pipeline OCR Tesseract embarqué + analyse par LLM (Groq / Gemini), zone de capture, mode ligne de commande.
 
-## Contribution
+## Avertissement
 
-Les contributions sont les bienvenues !
-- Ouvrez une issue pour signaler un problème ou proposer une fonctionnalité.
-- Faites un fork du projet et créez une pull request pour soumettre vos améliorations.
-
----
-
-## Licence
-Ce projet est sous licence MIT. Consultez le fichier `LICENSE` pour plus de détails.
-
+Projet personnel et éducatif pour s'entraîner à l'orthographe : les réponses des LLM peuvent être fausses, vérifie toujours la règle donnée.

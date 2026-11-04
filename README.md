@@ -63,9 +63,7 @@ Interactive mode (global hotkeys):
 
 ## Setup
 
-**Quick start:** download `porjet_voltaire.exe` and `fra.traineddata` from the [latest release](../../releases/latest), then put both files in the same folder.
-
-Next to the executable, create a `config.env` file based on [`config.env.example`](config.env.example):
+Build the executable (see [Building from source](#building-from-source)), then next to it create a `config.env` file based on [`config.env.example`](config.env.example):
 
 ```ini
 GROQ_API_KEY=...      # https://console.groq.com/keys

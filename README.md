@@ -1,74 +1,98 @@
-# Bot Projet Voltaire – OCR Tesseract + IA (Groq / Gemini)
+# Projet Voltaire Bot – Tesseract OCR + LLM (Groq / Gemini)
 
-![Exemple](ressources/exemple.png)
+![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus)
+![Tesseract](https://img.shields.io/badge/OCR-Tesseract%205-4B8BBE)
+![LLM](https://img.shields.io/badge/LLM-Groq%20%7C%20Gemini-8E75B2)
+![Windows](https://img.shields.io/badge/platform-Windows%20x64-0078D6?logo=windows)
 
-Outil Windows en **C++** qui lit une phrase à l'écran avec l'**OCR Tesseract** puis la fait analyser par **deux LLM en parallèle** (GPT-OSS 120B via **Groq** et **Google Gemini**) pour repérer les fautes d'orthographe, de grammaire et de conjugaison, avec la règle associée.
+A Windows tool written in **C++** that reads a French sentence on screen with **Tesseract OCR**. It sends the text to **two LLMs in parallel**, **Groq** (GPT-OSS 120B) and **Google Gemini**, which detect spelling, grammar and conjugation mistakes and explain the rule. It is built to practise for the [Projet Voltaire](https://www.projet-voltaire.fr/) French spelling certification.
 
-## Fonctionnement
+![Demo](ressources/demo.png)
+
+*Real output: both models answer side by side. In this example Gemini catches the mistake (« quoi qu'il » in two words) while GPT-OSS misses it, which is why the tool asks two models.*
+
+## How it works
 
 ```
-Capture d'une zone de l'écran (Win32 GDI)        Texte copié (Ctrl+C)
-                 │                                         │
-                 ▼                                         │
-Prétraitement Leptonica                                    │
-(niveaux de gris, agrandissement x2, contraste)            │
-                 │                                         │
-                 ▼                                         │
-OCR Tesseract 5 (LSTM, modèle français fra.traineddata)    │
-                 │                                         │
-                 └──────────────► texte ◄──────────────────┘
-                                   │
-                 ┌─────────────────┴─────────────────┐
-                 ▼                                   ▼
-        Groq · GPT-OSS 120B                  Google Gemini
-                 │   (requêtes HTTP parallèles,      │
-                 │    libcurl + nlohmann/json)       │
-                 └─────────────────┬─────────────────┘
-                                   ▼
-          « FAUTE : <mot> → <correction> | RÈGLE : … »
+ Screen region (Win32 GDI)                 Copied text (Ctrl+C)
+            │                                      │
+            ▼                                      │
+ Leptonica pre-processing                          │
+ (grayscale, 2× upscale, contrast normalization)   │
+            │                                      │
+            ▼                                      │
+ Tesseract 5 OCR (LSTM, French model)              │
+            │                                      │
+            └──────────────► text ◄────────────────┘
+                              │
+            ┌─────────────────┴─────────────────┐
+            ▼                                   ▼
+   Groq · GPT-OSS 120B                   Google Gemini
+            │    parallel HTTPS requests        │
+            │    (libcurl + nlohmann/json)      │
+            └─────────────────┬─────────────────┘
+                              ▼
+       "FAUTE : <word> → <fix> | RÈGLE : <rule>"
 ```
 
-- Le prompt système demande une réponse courte et structurée, et d'ignorer les petites erreurs de reconnaissance de l'OCR.
-- Les deux modèles sont interrogés en même temps (`std::async`) : leurs réponses se comparent d'un coup d'œil.
-- Le texte est encodé correctement en UTF-8 (`CF_UNICODETEXT`, JSON généré par nlohmann/json), ce qui garde les accents.
-- Les clés API ne sont jamais écrites dans le code (variables d'environnement ou `config.env`).
+- **OCR pipeline**: GDI screen capture → Leptonica image → pre-processing → `TessBaseAPI` (LSTM engine, single-block page segmentation). The OCR confidence score is displayed with each result.
+- **Prompting**: the system prompt asks for a short, structured answer and tells the model to ignore small OCR recognition errors.
+- **Two models, one request**: Groq and Gemini are called at the same time with `std::async`. Requests that fail with 429 or 503 are retried with backoff.
+- **Unicode**: the clipboard is read as `CF_UNICODETEXT` and the JSON is built with nlohmann/json, so French accents survive the whole pipeline.
+- **No secrets in code**: API keys are read from environment variables or from a git-ignored `config.env` file.
+- **Single executable**: Tesseract, Leptonica, libcurl and OpenSSL are statically linked through vcpkg (`x64-windows-static`, `/MT`).
 
-## Utilisation
+## Usage
 
 ```text
-projet_voltaire.exe                   mode interactif
-projet_voltaire.exe --image capture.png   OCR d'une image puis analyse IA
-projet_voltaire.exe --ocr capture.png     OCR seul
-projet_voltaire.exe --text "Les enfants que j'ai vu jouer..."   analyse IA d'un texte
+porjet_voltaire.exe                         interactive mode (screen region + clipboard)
+porjet_voltaire.exe --image capture.png     OCR an image, then analyse it with the LLMs
+porjet_voltaire.exe --ocr capture.png       OCR only (prints text + confidence)
+porjet_voltaire.exe --text "Les fleurs que j'ai cueilli..."   analyse a text directly
 ```
 
-En mode interactif (touches globales) :
+Interactive mode (global hotkeys):
 
-| Touche | Action |
+| Key | Action |
 |---|---|
-| **F7** | coin haut-gauche de la zone à lire (position de la souris) |
-| **F8** | coin bas-droite de la zone |
-| **F9** | capture de la zone → OCR → analyse IA |
-| **Ctrl+C** sur un texte | analyse directe du texte copié |
-| **Échap** | quitter (console au premier plan) |
+| **F7** | top-left corner of the region to read (mouse position) |
+| **F8** | bottom-right corner of the region |
+| **F9** | capture the region → OCR → LLM analysis |
+| **Ctrl+C** on any text | analyse the copied text |
+| **Esc** | quit (console in foreground) |
 
-## Installation
+## Setup
 
-1. **Dépendances** avec [vcpkg](https://github.com/microsoft/vcpkg) (intégration MSBuild : `vcpkg integrate install`) :
+**Quick start:** download `porjet_voltaire.exe` and `fra.traineddata` from the [latest release](../../releases/latest), then put both files in the same folder.
+
+Next to the executable, create a `config.env` file based on [`config.env.example`](config.env.example):
+
+```ini
+GROQ_API_KEY=...      # https://console.groq.com/keys
+GEMINI_API_KEY=...    # https://aistudio.google.com/apikey
+# Optional
+GROQ_MODEL=openai/gpt-oss-120b
+GEMINI_MODEL=gemini-flash-lite-latest
+OCR_LANG=fra
+```
+
+You can change models without recompiling. One key is enough: the other model is simply skipped.
+
+## Building from source
+
+1. Install the dependencies with [vcpkg](https://github.com/microsoft/vcpkg) and enable its MSBuild integration:
    ```bash
    vcpkg install tesseract:x64-windows-static curl:x64-windows-static nlohmann-json:x64-windows-static
+   vcpkg integrate install
    ```
-2. Ouvre `porjet_voltaire.sln` dans **Visual Studio** et compile en **Release | x64** (toolset v145, C++17, runtime statique `/MT`) : on obtient un seul `.exe` autonome.
-3. Télécharge le modèle français [`fra.traineddata`](https://github.com/tesseract-ocr/tessdata_best/raw/main/fra.traineddata) et place-le à côté de l'exécutable (ou dans un dossier `tessdata/`).
-4. Copie `config.env.example` en `config.env` à côté de l'exécutable et renseigne `GROQ_API_KEY` et/ou `GEMINI_API_KEY`.
+2. Open `porjet_voltaire.sln` in **Visual Studio** and build **Release | x64** (toolset v145, C++17, `/utf-8`).
+3. Download the French model [`fra.traineddata`](https://github.com/tesseract-ocr/tessdata_best/raw/main/fra.traineddata) and put it next to the executable, or in a `tessdata/` folder.
 
-Les modèles sont configurables (`GROQ_MODEL`, `GEMINI_MODEL`, `OCR_LANG`) sans recompiler.
+## Project history
 
-## Historique
+- **v1**: watched the clipboard and sent the text to the Reverso spell-checking API.
+- **v2**: embedded Tesseract OCR with screen-region capture, analysis by two LLMs (Groq and Gemini), command-line modes and configuration through `config.env`.
 
-- **v1** : surveillance du presse-papiers et correction via l'API Reverso.
-- **v2** : pipeline OCR Tesseract embarqué + analyse par LLM (Groq / Gemini), zone de capture, mode ligne de commande.
+## Disclaimer
 
-## Avertissement
-
-Projet personnel et éducatif pour s'entraîner à l'orthographe : les réponses des LLM peuvent être fausses, vérifie toujours la règle donnée.
+This is a personal, educational project for practising French spelling. LLM answers can be wrong, as the demo above shows, so always check the rule they give.
